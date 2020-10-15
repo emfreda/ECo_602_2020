@@ -1,4 +1,5 @@
 require(palmerpenguins)
+penguins <- palmerpenguins::penguins
 
 #----Question_1----
 
@@ -61,6 +62,7 @@ sum(abs(mean_differences) >= diff_observed)
 #####answer in Moodle#####
 
 #----Question_6----
+
 png("Q6.png", height = 800, width = 600, res = 180)
 boxplot(bill_length_mm ~ species, data = dat_pen,
         main = "Bill Length by Species",
@@ -68,12 +70,35 @@ boxplot(bill_length_mm ~ species, data = dat_pen,
         ylab = "Bill Length (mm)")
 dev.off()
 
+#calc group means and diff btwn groups
+diff_crit_agg <- aggregate(bill_length_mm ~ species, 
+                       data = dat_pen, FUN = mean, 
+                       na.rm = TRUE)
+diff_crit <- diff(diff_crit_agg[, 2])
+diff_crit_agg
+diff_crit
 
+#----Question_7----
 
+#conduct t test, observe p value
+t.test(dat_pen$bill_length_mm ~ dat_pen$species)
 
+#----Question_8----
 
+n = 1000
+bill_mean_differences = c()
+for (i in 1:n)
+{
+  bill_mean_differences = c(
+    bill_mean_differences,
+    two_group_resample(dat_pen$bill_length_mm, 68, 152)
+  )
+}
+png("Q8.png", height = 800, width = 800, res = 180)
+hist(bill_mean_differences,
+     main = "Bill Mean Differences Histogram",
+     xlab = "Mean Differences")
+dev.off()
 
-
-
-
+sum(abs(bill_mean_differences) >= diff_crit)
 
