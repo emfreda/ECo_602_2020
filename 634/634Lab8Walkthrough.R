@@ -21,7 +21,7 @@ require(here)
 veg <- read.csv(here("data/vegdata.csv"))
 boxplot(pine ~ treatment, dat = veg)
 #new df w clipped and control treatments only
-dat_tree = droplevels(subset(veg, treatment %in% c("control", "clipped")))
+dat_tree <- droplevels(subset(veg, treatment %in% c("control", "clipped")))
 boxplot(pine ~ treatment, dat = dat_tree)
 #use table to find # obs per treatment type
 #arguments are hard, may be wrong but gets right answer
@@ -48,10 +48,10 @@ dat_all = merge(dat_bird, dat_habitat,
 #s.sidi = diversity index for vegetation cover types
 
 #simple linear regression
-fit_1 = lm(b.sidi ~ s.sidi, data = dat_all)
+fit_1 <- lm(b.sidi ~ s.sidi, data = dat_all)
 coef(fit_1)
 #save slope coefficient (s.sidi,aka predictor variable) for later
-slope_observed = coef(fit_1)[2]
+slope_observed <- coef(fit_1)[2]
 #add regression line to a plot
 plot(b.sidi ~ s.sidi, data = dat_all,
      main = "Simpson's diversity indices",

@@ -1,30 +1,1018 @@
 ---
-title: "Eco_602_Final_Project"
+title: "ECo 602 - Analysis of Environmental Data"
+subtitle: "Final Project Template: Data Analysis"
 author: "Emily Freda"
-date: "10/15/2020"
-output: html_document
+date: "Fall 2020"
+output:
+  html_document:
+    theme: readable
+    toc: TRUE
+    toc_float: TRUE
+editor_options:
+  chunk_output_type: console
 ---
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+options(knitr.duplicate.label = TRUE)
 ```
 
-## R Markdown
+<!-- The following text won't be displayed in your document.  It tells R how to make nicer looking buttons for your tabbed content. -->
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+<style type="text/css" rel="stylesheet">
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+.btn {
+    border-width: 0 0 0 0;
+    font-weight: normal;
+    text-transform: none;
+}
 
-```{r cars}
-summary(cars)
+.btn-default {
+    color: #2ecc71;
+    background-color: #ffffff;
+    border-color: #ffffff;
+}
+</style>
+
+# Introduction
+
+This document is a quick refresher on some basic R functions with examples of how to use them. These functions are seperated into sections for data structure, numerical exploration, graphical exploration, distributions, and a catchall "other" category. 
+
+In the Data Analysis section, some of these functions will be used to conduct a model-fitting analysis on a small-mammal dataset to serve as a more in depth example of utilizing the above functions.
+
+Be sure to intsall and require the `here()` function before running some of these lines.
+
+```{r here()_setup}
+require(here)
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+# Functions 1: Data Structure Functions {.tabset .tabset-pills}
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+## `c()`
+
+CREATING VECTORS
+
+The function `c()` *combines* or *concatenates* its arguments into a vector (a 1-dimensional data structure consisting of 1 or more elements).
+
+- All of the elements must be of the same *type*.
+  - For example, character and numeric types cannot both be in a vector created by `c()`
+
+Here's two examples using numeric and character data types:
+```{r using_c}
+# Create a vector of numbers:
+num_vec <- c(1, 4, 8, 9, 13)
+
+# Create a vector of characters:
+char_vec = c("a", "fish", "data is cool")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+- As you can see, <- and = can both be used to store objects under variable names. There are minor, and in most cases negligible, differences between the two.
+- However, for argument assignments within a function, always use =
+
+To display the contents of the vector, type its name and run the line, or use the name as the argument for the `print()` function.
+```{r displaying_vectors}
+# Typing the name of the vector into the console prints the contents
+num_vec
+
+# The print() function accomplishes the same task:
+print(char_vec)
+```
+
+## `data.frame()`
+
+CREATING DATA FRAMES
+
+A `data.frame` is a two-dimensional data structure where each column contains all values for that variable and each row contains one set of values for each variable/column.
+
+- Data frames can have mixed variable types between columns (numeric, factor, or character)
+
+Below is an example of creating and printing a `data.frame`
+```{r data.frame_eg.1}
+dat1 <- data.frame(letters = c("a","b","c","d","e"),
+                   numbers = c(2, 8, 12, 43, 82))
+#contents can be printed by typing the data.frame name (or using print())
+dat1
+```
+
+The phrases *letters* and *numbers* represent the variable names and each consist of a vector holding its values. The first value of each vector is now associated with the first value of the other vector and so on through the range of values.
+
+You can use the `head()` function to print the first few (6) lines of a data.frame.
+
+Here's an example with the birds data
+
+- note: the `read.csv()` function is explained in more detail in the Functions 5 section.
+```{r head_function}
+#reading in the data & assigning the data.frame to a variable
+dat_birds <- read.csv(here("data/bird.sub.csv"))
+
+#taking a peek at the first few lines
+head(dat_birds)
+#returns this output
+```
+
+The same can be accomplished with the last few (6) lines of data using the `tail()` function. These functions are useful for taking a quick peek at some of the values in a very large data frame when you dont want to print hundreds of values. 
+
+## `subsetting`
+
+SUBSETTING A DATA FRAME
+
+Sometimes you want to look at only *some* of a data frame, or use another function on only a section of that data frame. Subsetting allows you to do so *without* creating a seperate object of just the desired data. 
+
+If I know the name of the column I can use `$` to select the entire column.
+
+```{r subsetting_1}
+dat1 <- data.frame(letters = c("a","b","c","d","e"),
+                   numbers = c(2, 8, 12, 43, 82))
+#subset a column by name
+dat1$letters
+```
+
+If I know the index value for the column I can use `[ ]`
+```{r subsetting_2}
+#subsetting the first column by index
+#this code accomplishes the same thing as the above example
+dat1[ ,1]
+```
+
+Notice the blank space and comma before the 1. This is because `[ ]` can subset by rows and/or columns using the format [rows, columns]. You can select multiple rows or columns in succession using a colon to separate the end values. 
+
+Here is an example of subsetting `dat1` by the first three rows of the second column.
+```{r subsetting_3}
+dat1[1:3, 2]
+```
+
+Notice that when using both `$` and `[ ]`, the results are returned as a *vector*. If you want to keep the results in the dataframe structure, use `[ ]` and add the argument `drop = FALSE` *after* the row/column designations.
+```{r subsetting_4}
+dat1[1:3, 2, drop = FALSE]
+```
+
+Similarly, if you use `[ ]` to subset *by the variable name*, R will return a `data.frame`. Note that this requires quotations because the variable name is a character string. 
+```{r subsetting_5}
+dat1["letters"]
+```
+
+The last and most powerful way to subset is with the `subset()` function. It allows you to create more complex or *conditional* subsets. You can select rows by a specific value of a given column.
+
+- The first argument for this function is the data frame to be subsetted. 
+- The second argument specifies the condition in the column you would like to subset by.
+
+Say we want to select all rows in the data frame that correspond to a value in the `numbers` column above 10. Our code would look like this:
+```{r subsetting_6}
+subset(dat1, numbers > 10)
+```
+
+We can also subset this data frame to retrieve the rows corresponding to a `letters` value of 'a' using the same syntax:
+```{r subsetting_7}
+subset(dat1, letters == "a")
+```
+
+You can save the results of a subset to a new variable if you anticipate calling that subset frequently in your analysis, which is often the case.
+
+## `matrix()`
+
+CREATING MATRICES
+
+Matrices, like data frames, are a two-dimensional data structure. They consist of numeric data and are often used for later computations in your analysis. 
+
+There are 4 important arguments when constructing matricies:
+- `value` is the vector input to fill the matrix. 
+- `nrow` is the desired number of rows
+- `ncol` is the desired number of columns
+- `byrow` is an argument with a Boolean value (TRUE or FALSE). The default value is FALSE, meaning the matrix will fill in by column from top to bottom, left to right. 
+
+The following example constructs a 3x3 matrix filled by column of a vector containing 6 values:
+```{r matrix_1}
+mat1 <- matrix(c(2,4,6,8,10,12), nrow = 3, ncol = 3)
+mat1
+```
+
+Here is the same matrix, but filled by row. Note the inclusion of the `byrow` argument:
+```{r matrix_2}
+mat2 <- matrix(c(2,4,6,8,10,12), nrow = 3, ncol = 3, byrow = TRUE)
+mat2
+```
+
+One sneaky detail about creating matrices is that cannot be filled with a vector that is not a multiple or sub-multiple of the number of rows; R will return an error message.
+
+## `length()`
+
+The `length()` function returns the length of an object. You can use legnth to count:
+- the number of values in a vector
+- the number of variables in a matrix or data frame
+- the number of entries in a list
+
+Using `length()` on a vector:
+```{r length_vector}
+num_vec <- c(1, 4, 8, 9, 13)
+length(num_vec)
+```
+
+Using `length()` on a data frame:
+```{r length_data.frame}
+dat1 <- data.frame(letters = c("a","b","c","d","e"),
+           numbers = c(2, 8, 12, 43, 82))
+length(dat1)
+```
+
+Using `length()` on a list:
+```{r leength_list}
+my_list <- list(num_vec, dat1, c("a", "b", "c"))
+length(my_list)
+```
+
+## `nrow()`
+
+The `nrow()` function returns the number of rows in a data frame or matrix. 
+```{r nrow_1}
+dat2 <- data.frame(index = c(1,2,3,4,5,6,7,8),
+                   sex = c("M","M","M","F","M","F","F","M"),
+                   size = c(12,13,12,11,13,12,10,14))
+nrow(dat2)
+```
+
+Youn can also use `nrow()` with conditions to select the number of rows that meet a given criterion. 
+```{r nrow_2}
+nrow(dat2[dat2$size == 12, ])
+```
+
+Notice the syntax for indexing this condition. Within `dat2`, the number of entries with a size equal to 12 was called using `[dat2$size == 12, ]`. The comma and blank space at the end tell R that you acknowledge the R syntax requiring a column designation despite the fact that you're interested in the rows. 
+
+`nrow()` is frequently used in loops. It facilitates iterating over each entry in a dataframe without directly specifying that value. 
+```{r nrow_loop}
+for(i in 1:nrow(dat2)) {
+  if(dat2$sex[i] == "M") {
+     print(paste("Male at index", dat2$index[i], "is", dat2$size[i]))
+  }
+}
+```
+
+This loop iterated over each row in `dat2` and printed the size at each index only if the sex was male. 
+
+## `ncol()`
+
+`ncol()` is the same as `nrow()` except it prints the number of columns in a data frame or matrix. This is useful to count the number of variables present in a data frame.
+
+```{r ncol}
+dat2 <- data.frame(index = c(1,2,3,4,5,6,7,8),
+                   sex = c("M","M","M","F","M","F","F","M"),
+                   size = c(12,13,12,11,13,12,10,14))
+ncol(dat2)
+```
+
+Note that in this case, `ncol()` accomplishes the same task as the `length()` function since the object is a data frame.
+```{r length}
+length(dat2)
+```
+
+When a vector is used as the argument for `nrow()` or `ncol()`, R returns `NULL` since it is a one dimensional object. If you transformt the vector to a data frame, the vector becomes a column with each entry acting as a row.
+```{r}
+num_vec <- c(1, 4, 8, 9, 13)
+nrow(num_vec)
+ncol(num_vec)
+as.data.frame(num_vec)
+nrow(as.data.frame(num_vec))
+ncol(as.data.frame(num_vec))
+```
+
+
+## `dim()`
+
+The `dim()` function returns the dimensions of a two dimensional object in the form `rows columns`. This function is useful for understanding the dimensions of a large dataset.
+
+Here is an example of using `dim()` on the dataframes we've constructed:
+```{r dim}
+dat1 <- data.frame(letters = c("a","b","c","d","e"),
+                   numbers = c(2, 8, 12, 43, 82))
+dim(dat1)
+dat2 <- data.frame(index = c(1,2,3,4,5,6,7,8),
+                   sex = c("M","M","M","F","M","F","F","M"),
+                   size = c(12,13,12,11,13,12,10,14))
+dim(dat2)
+```
+
+`dim()` will not work on a vector, returning a `NULL` value. You can use the `as.data.frame()` function to find the length of the vector using `dim()`, though it is simpler to just use the `length()` function. 
+
+
+# Functions 2: Numerical Data Exploration {.tabset .tabset-pills}
+
+## `summary()`
+
+`summary()` returns summary statistics that vary depending upon the class of the first argument.
+
+`summary()` with a factor:
+```{r summary_factor}
+region <- as.factor(c("North","South","North","East","West","South","West","South"))
+summary(region)
+```
+The number of entries in each factor level are reported.
+
+`summary()` with a data frame:
+```{r summary_data.frame}
+summary(dat2)
+```
+The quartiles for each numeric variable and a count of entries at each factor varaible level are reported.
+
+This function is often used to check the statistical analysis results returned from a model. The below example runs a linear regression to fit a linear model to data found in the `palmerpenguins` data package. This model will fit a trend for body mass determined by species.
+
+```{r summary_model}
+#load the data
+require(palmerpenguins)
+#save the model to a variable
+species_model <- lm(body_mass_g ~ species, data = penguins)
+#check out the summary stats
+summary(species_model)
+```
+- note the use of the formula notation `(y ~ x)` in the `lm()` function.
+`summary()` is useful because it displays the model coefficient table.
+
+## `mean()`
+
+This function is self explanatory; it finds the mean of the argument input. You can use it on numerical data in any data structure. When using `mean()` on two dimensional data, you must subset the column you want to average. 
+```{r mean}
+mean(num_vec)
+mean(dat2$size)
+```
+
+## `sd()`
+
+You can find the standard deviation of a vector or column using the `sd()` function. Standard deviation tells you about the spread of your data around the mean. It is a useful numerical exploration tool in the preliminary data exploration stages of an analysis. 
+
+```{r stdev}
+sd(num_vec)
+#compare to mean of num_vec
+print(paste(mean(num_vec), sd(num_vec)))
+```
+
+Using these functions together tells us that `num_vec` has a large spread around it's mean relative to its range of values (1 to 13).
+
+
+
+# Functions 3: Graphical Data Exploration {.tabset .tabset-pills}
+
+## `plot()`
+
+SCATTERPLOTS
+
+`plot()` can create a scatterplot when given two continuous varaibles. 
+- R will create a boxplot if your independent variable (x) is categorical.
+```{r scatterplot_eg.1, fig.asp = 0.75}
+#load in penguin data
+require(palmerpenguins)
+#use the formula notation in the plot function
+plot(bill_length_mm ~ body_mass_g, data = penguins)
+```
+
+There are many additional arguments for `plot()` to change various aspects of the graph.
+
+- `col` changes the color of the points; accepts color names as character strings
+- `pch` changes the point symbol, which is set by a number from 0-25
+- `cex` controls the character size. It has a defalut value of 1, and a value of 1.5 increases the size by 50%
+- `main` is the plot title, entered as a character string
+- `xlab` is the x-axis label, entered as a character string
+- `ylab` is the y-axis label, entered as a character string
+- `xlim` are the minimum and maximum x values displayed on the graph, entered as a vector like so: c(min, max)
+- `ylim` are the minimum and maximum y values displayed on the graph, entered as a vector like so: c(min, max)
+
+Below is the same graph as above, but the above arguments are all added to the plot. 
+```{r scatterplot_eg.2, fig.asp = 0.75}
+plot(bill_length_mm ~ body_mass_g, data = penguins,
+     col = "sky blue", pch = 18, cex = .75,
+     main = "Penguin Body Mass by Bill Length",
+     xlab = "Body Mass (g)",
+     ylab = "Bill Length (mm)",
+     xlim = c(2600, 6000),
+     ylim = c(30, 60))
+```
+
+Many of these arguments can also be used with other plotting functions.
+
+## `hist()`
+
+HISTOGRAMS
+
+The `hist()` function plots a histogram of your data. Histograms provide a visual representation of the distribution of discrete or continuous datasets.
+
+You can make a histogram from a vector or from a column in a data.frame. The below example is a histogram for the body mass of all penguins in the `palmerpenguins` package. 
+```{r hist1, fig.asp = 0.75}
+hist(penguins$body_mass_g)
+```
+
+As you can see, R sectioned this data into 8 bins seperated by 9 breaks. If we wanted to change the number of breaks so each bin represents smaller chunks of the data, we can use the `breaks` argument. 
+
+To see where the breaks currently are, you can save the histogram to a variable and print the variable name followed by `$breaks`.
+You can also use the histogram variable name followed by $breaks in the `length()` function to count the current number of breaks.
+- This is useful when there are too many breaks for a quick glance to count. 
+```{r hist2, fig.show='hide'}
+h <- hist(penguins$body_mass_g)
+print(h$breaks)
+length(h$breaks)
+```
+
+This histogram has 9 breaks from 2500 to 6500 at intervals of 500. We can set the `breaks` argument to 18 to see what this graph looks like with twice as many breaks.
+- Note: R does not like certain numbers for breaks, so it can take trial and error to find one close to your and R's liking.
+```{r hist3, fig.asp = 0.75}
+hist(penguins$body_mass_g, breaks = 18)
+```
+
+
+## `boxplot()`
+
+BOXPLOTS
+
+Boxplots display the distribution of numerical data across its quartiles. They are also useful in data exploration because they visually display the data's potential skewness. A normally distributed dataset will produce a symmetrical boxplot. 
+
+Here is an example of a simple boxplot using the `palmerpenguins` package:
+```{r boxplot1, fig.asp = 0.75}
+boxplot(penguins$body_mass_g,
+        main = "Penguin Body Mass (g) Boxplot")
+```
+
+Boxplots can also be conditional, meaning the continuous variable is seperated by a given condition. In the below example, the same variable (body mass) is conditioned by species.
+```{r boxplot2, fig.asp = 0.75}
+boxplot(body_mass_g ~ species, data = penguins, main = "Penguin Body Mass (g) by Species")
+```
+
+## `par(mfrow = )`
+
+The `par` function with the argument `mfrow =` allows you to chose the number and layout of graphs to be displayed in the plot window. They fill in left to right, top to bottom.
+
+The syntax for this function is `par(mfrow = c(rows, columns))`. 
+In the below example, the penguin body mass histogram, simple boxplot, and conditional boxplot will all be displayed in the same window. 
+```{r parmfrow, fig.asp = 0.75}
+par(mfrow = c(3,1),
+    mar = c(2.5,4.5,2.3,2))
+hist(penguins$body_mass_g, main = "Body Mass (g) Histogram")
+boxplot(penguins$body_mass_g, main = "Body Mass (g) Boxplot")
+boxplot(body_mass_g ~ species, data = penguins, main = "Body Mass (g) by Species")
+```
+
+The `mar` argument in the `par()` function is used to control the margin size on the four sides of the plot. It has default values of `c(5,4,4,2) + 0.1` in the order `c(bottom,left,top,right)`.
+
+
+# Functions 4: Distribution Functions {.tabset .tabset-pills}
+
+## `dnorm()`
+
+NORMAL PROBABILITY DENSITY FUNCTION
+
+`dnorm(x, mean = 0, sd = 1, log = FALSE)`
+
+With a given input (x), this functions output (y) provides the *relative likelihood* (probability) that a point *at random* in a normal distribution would equal the input value. This helps us discern if a given observation is likely or not. 
+
+- Essentially, this function returns the probability of observing a value equal to `x` (x-value) in a *Normal Distribution*.
+- The Probability Density Function (PDF) represents *continuous* distributions.
+
+This function has 3 main arguments:
+
+- `x` a vector of x values
+- `mean` the sample mean, default value = 0
+- `sd` the standard deviation, default value = 1
+
+The default `mean` and `sd` values represent a *Standard Normal Distribution*. Changing these values does not change the fact that the data is normally distributed.
+
+If you want to find the probability of a single value in in a Standard Normal Distribution, say -1, you can just plug it into the `dnorm()` function:
+
+- Note: if your data does not have a Standard Normal Distribution, the default `mean` and `sd` values must be replaced with the appropriate ones as `dnorm()` arguments here.
+
+```{r dnorm2}
+#saving to a variable for later
+dy_val <- dnorm(-1)
+#print to see result
+dy_val
+```
+
+While the function alone returns a single density probability value, the PDF curve can be plotted as well.
+
+Here is the code and resulting plot for the PDF of a Standard Normal Distribution from -3 to 3 of 100 points:
+
+```{r dnorm1, fig.asp = 0.75}
+#create a vector of normally distributed x values
+x <- seq(-3, 3, length.out = 100)
+#create a PDF of these values
+dy <- dnorm(x)
+#plot the values vs their PDF
+plot(x, dy,
+     main = "PDF for 100 Random Normally Distributed Points",
+     type = "l")
+```
+
+The above calculation of the probability at -1 can be plotted as a line on your PDF distribution to visually confirm -- this is why we saved that value to a variable:
+
+- Use the `abline()` function after `plot()` 
+
+- this graph will also have a vertical line at -1 to highlight the interception on the curve.
+
+```{r dnorm3, fig.asp = 0.75}
+plot(x, dy,
+     main = "PDF for 100 Random Normally Distributed Points",
+     type = "l")
+abline(h = dy_val, v = -1)
+```
+
+
+## `pnorm()`
+
+NORMAL CUMULATIVE PROBABILITY DENSITY FUNCTION
+
+`pnorm(q, mean = 0, sd = 1, lower.tail = TRUE)`
+
+The Cumulative Density Function (CDF)
+returns the probability of observing a value *smaller than or equal to* `q` (x-value) in a *Normal Distribution*. This function is different from `dnorm()`, which gives the height of the curve (representing a singular probability) at x; `pnorm()` gives the *area* under the curve *up to* x from it's lowest value and therefore represents *cumulative* probabilities.
+
+As with `dnorm()`, there are 3 main arguments:
+
+- `q` a vector of x values
+- `mean` the sample mean, default value = 0
+- `sd` the standard deviation, default value = 1
+
+In the below example, we will use the same sequence of x-values as we did for `dnorm()`. The CDF will be plotted on the y-axis.
+
+
+```{r pnorm1, fig.asp = 0.75}
+#set vector of x-values
+x <- seq(-3, 3, length.out = 100)
+#generate CDF
+py <- pnorm(x)
+#plot
+plot(x, py, 
+     main = "CDF for 100 Random Normally Distributed Points",
+     type = "l")
+```
+
+Notice that this curve is not bell-shaped despite representing a Normal Distribution. This is because it represents *cumulative* probabilties.
+
+Lets figure out what the probability of selecting a number less than or equal to 1.5 is on our CDF.
+
+- Note: the default `mean` and `sd` values must be replaced with the appropriate ones as `pnorm()` arguments here if your Normal Distribution is not Standard (mean = 0, sd = 1).
+
+```{r pnorm2}
+#save to a variable for later
+py_val <- pnorm(1.5)
+#print variable to see results
+py_val
+```
+
+Lets plot this value as a horizontal line on the CDF with a vertical line at our x-value (1.5) to visually confirm:
+
+```{r pnorm3, fig.asp = 0.75}
+plot(x, py, 
+     main = "CDF for 100 Random Normally Distributed Points",
+     type = "l")
+abline(h = py_val, v = 1.5)
+```
+
+CDFs only work from left to right, meaning you cannot directly calculate the probability of picking a value *greater than* or equal to 1.5. However, the Total Law of Probability states that all probabilities sum up to 1, so some quick math can help us answer this question. 
+
+```{r pnorm4}
+GreaterThan <- 1 - pnorm(1.5)
+GreaterThan
+```
+
+This same logic allows us to find probabilites between two values, say 1 and 1.5, by subtracting the smaller probability from the larger one.
+
+```{r pnorm5}
+Between <- pnorm(1.5) - pnorm(1)
+Between
+```
+
+
+## `qnorm()`
+
+NORMAL QUANTILE FUNCTION
+
+`qnorm(p, mean = 0, sd = 1, lower.tail = TRUE)`
+
+The Quantile Function is essentially the inverse of the CDF. You use it to *find* the x-value at which a given probability is expected. It is frequently used for defining percentiles.
+
+- Reminder: the 90th percentile asks "what x-value will be greater than or equal to 90% of all x-values?"
+
+As with the above functions, there are 3 important arguments. `mean` and `sd` remain the same, but the input vector is slightly different.
+
+- `p` a vector of *probabilities*
+- `mean` the sample mean, default value = 0
+- `sd` the standard deviation, default value = 1
+
+Lets find the 85th percentile of a Standard Normal Distribution.
+
+```{r qnorm1}
+qnorm(0.85)
+```
+
+Now we know that 85% of all x-values in a Standard Normal Distribution are equal to or less than `1.036433`. Neat!
+
+In the `pnorm()` section we used some quick math to find the area under the curve from the upper tail to a given point, but R also has an argument to do this for you. It can be used with `pnorm()` and `qnorm()`. The argument `lower.tail =` has a default value of `TRUE`, meaning the area is calculated from the lower tail to the input value. If we give it a value of `FALSE`, the function will find the area under the curve from the upper tail.
+
+Lets calculate the upper 15% of all values for our Standard Normal Distribution:
+
+```{r qnorm2}
+# 1 - 0.15 = 0.85 -> 85th percentile:
+qnorm(0.85)
+#use lower.tail = FALSE:
+qnorm(0.15, lower.tail = FALSE)
+```
+
+As you can see, both lines produce the same result, they just get there different ways. In either case, all values above `1.036433` are in the top 15% of this distribution.
+
+Let's plot the Quantile Function with this percentile (0.85) as a vertical line and it's corresponding x-value as a horizontal line for a visual representation of this concept.
+
+```{r qnorm3, fig.asp = 0.75}
+#get x-values over standard normal range
+x <- seq(-3, 3, length.out = 100)
+#set y-values as the quantile function of x
+qy <- qnorm(x)
+#plot
+plot(x, qy, type = "l",
+     main = "Standard Normal Quantile Function",
+     xlim = c(0,1))
+abline(h = qnorm(0.85), v = 0.85)
+```
+
+
+## `dbinom()`
+
+PROBABILITY MASS FUNCTION OF A BINOMIAL DISTRIBUTION
+
+`dbinom(x, size, prob, log = FALSE)`
+
+This function returns the value of the PDF curve for a *Binomial Distribution*. This value represents the *probability of getting a certain number of sucesses* when given a number of trials and the probability of success for each trial. It is assumed that the trials are independent with equal probabilities and success/failure are the only possible outcomes of each trial. Success/failure can represent presence/absence in ecological data.
+
+- The Probability Mass Functions (PMF) represents *discrete* distributions, making them appropriate for use on count data.
+
+Discrete data changes the arguments for the `binom` functions relative to the `norm` functions. They are as follows:
+
+- `x` x-value representing desired number of successes
+- `size` the number of trials
+- `prob` the probability of success for each trial
+
+Let's say you are taking a 25 question test and each question has 4 options with only one correct option per question. What is the probability that you select 10 correct answers if you fill out the test randomly? `dbinom()` can finure it out:
+
+```{r dbinom1}
+# 1/4 odds means p_success = 0.25
+p.TenRight <- dbinom(10, 25, 0.25)
+p.TenRight * 100
+```
+
+You have a 4% probability of correctly guessing 10 questions on this 25 question test! Maybe study... At least the coding is straightforward!!
+
+
+## `pbinom()`
+
+BINOMIAL CUMULATIVE DISTRIBUTION FUNCTION
+
+`pbinom(q, size, prob, lower.tail = TRUE)`
+
+This function returns the probability of observing a value *smaller than or equal to* `q` (x-value) in a *Binomial Distribution*. It carries the same assumptions as `dbinom()` and has the same arguments, though `x` in `dbinom()` is `q` in `pbinom()`.
+
+Let's revisit our test-taking example from the `dbinom()` section. `pbinom()` can find the probability that we answer 10 *or less* answers correctly at random:
+
+```{r pbinom1}
+pbinom(10, 25, 0.25) * 100
+#note that this is the same as
+sum(dbinom(0:10, 25, 0.25)) * 100
+```
+
+Congrats! You have a 97% chance of answering 0-10 questions right. Not bad.
+
+`pbinom()` and `qbinom()` also include the optional argument `lower.tail =` with a default value of `TRUE`, meaning these functions find the cumulative probability from the lower tail to the given value. We can use `lower.tail = FALSE` to find the probability that you answer 10 *or more* questions correctly at random:
+
+```{r pbinom2}
+pbinom(10, 25, 0.25, lower.tail = FALSE) * 100
+```
+
+
+## `qbinom()`
+
+BINOMIAL QUANTILE FUNCTION
+
+`qbinom(p, size, prob, lower.tail = TRUE)`
+
+`qbinom()` functions the same as `qnorm()` with respect to their relative distributions. It returns the number of successes for a given probability (`p`). 
+
+Let's find the 90th percentile for guessing answers on our 25 question test. 
+
+```{r qbinom}
+qbinom(0.9, 25, 0.25)
+```
+
+This result answers the question "what number of correct guesses per test will be greater than or equal to 90% of all correct guesses per test?". Turns out, if you correctly guess 9 questions, only 10% of test takers guessed better than you. 
+
+Don't forget that `qbinom()` can also use the `lower.tail =` argument, though sometimes it's just easier to do the quick math yourself.
+
+
+# Functions 5: Other Functions {.tabset .tabset-pills}
+
+## `read.csv()`
+
+`read.csv()` allows you to read in data from a csv (comma-separated-values) file, creating a `data.frame`. The path to the file is the argument for this function. 
+
+- Using the function `here()` nested within `read.csv()` allows you to easily access files within a data folder.
+  - note: `here()` makes referencing files easier by "creating paths relative to the top level directory" and is easier to use than `setwd()` in most cases.
+
+Here's an example of using `read.csv()` with `here()`:
+
+```{r read_birds_data}
+dat_birds <- read.csv(here("data/hab.sta.csv"))
+
+```
+
+The `hab.sta.csv` is now stored as a `data.frame` labeled "dat_birds" in the environment.
+
+
+## `library()`
+
+R comes with many built in packages, which are all stored in the library. You can use `library()` function to gain access to packages once you download them with `intall.packages()`. `library()` has the benefit of providing an error message while loading the package if it fails, which prevents running into package errors further in your script. It is also useful to use `library()` when you want the package to be updated if you made changes to it. 
+
+```{r library}
+#package already installed with install.packages()
+#library reloads the package every time
+library(rnoaa)
+#check if package is there by calling one of it's functions
+buoy
+```
+
+`library()` is also useful when used without arguments to take a look at what pakages are available for download, though these can also be viewed from the `Packages` tab in the lower right window of RStudio.
+
+## `require()`
+
+The `require()` function can be used to load packages. Like `library()`, `require()` must be run after the package is installed with `install.packages()`. The advantage of using `require()` over `install()` is that it fist checks if a package is already loaded and only loads it if it isn't. This is beneficial since loading packages can take a litle bit of time, so repeated use of `library()` unnecessarily reloads the package with each use and add to your script's run time.
+
+```{r require}
+#package is already installed
+#is it loaded yet? require() will check
+#loads package only if not already loaded
+require(rnoaa)
+#check if package is there by calling one of it's functions
+buoy
+```
+
+# Part 2: Data Anaylsis {.tabset .tabset-pills}
+
+## `LOADING DATA`
+
+```{r load_data, collapse = TRUE}
+require("here")
+delomys <- read.csv(here("data/delomys.csv"))
+summary(delomys$body_mass)
+summary(delomys$body_length)
+```
+
+
+## `GRAPHICAL EXPLORATION`
+
+```{r plot_mass_length, echo = FALSE, fig.asp = 0.6, fig.width = 10}
+plot(body_mass ~ body_length, data = delomys, pch = 21,
+     main = "Delomys Body Mass by Length",
+     xlab = "Length",
+     ylab = "Mass")
+```
+
+There appears to be a **strong positive linear relationship** between body mass and length. There are some outlier values of much longer individuals with lower relative body masses compared to the majority of the sample.
+
+```{r hist_mass, echo = FALSE, fig.align = 'center', fig.asp = 0.6}
+hist(delomys$body_mass,
+     main = "Histogram of Body Mass",
+     xlab = "Mass",
+     breaks = 15)
+```
+
+```{r hist_length, echo = FALSE, fig.align = 'center', fig.asp = 0.6}
+hist(delomys$body_length,
+     main = "Histogram of Body Length",
+     xlab = "Length",
+     breaks = 20)
+```
+
+Both body mass and length appear to be normally distributed though slightly skewed *with the exlusion of the outlier values*. However, since these values are present, these data do **not** appear to be normally distributed. This can be confirmed using the `shapiro.test()`, which returns a p-value below 0.05 if the data is not normally distributed.
+
+```{r shapiro_mass, collapse = TRUE}
+#test mass for normality
+shapiro.test(delomys$body_mass)
+#p less than 0.05
+```
+
+```{r shapiro_length, collapse = TRUE}
+#test length for normality
+shapiro.test(delomys$body_length)
+#p less than 0.05
+```
+
+Since the `shapiro.test()` for both body mass and length returned p-values below 0.05, we can reject the Shapiro null hypothesis that the data is normally distributed. This agrees with my visual infrence from the historgrams that **these data are not normally distributed.** 
+
+```{r boxplot_BM_by_species, echo = FALSE, fig.align = 'center', fig.height = 6, fig.width = 9.5}
+par(mfrow = c(1,2))
+boxplot(body_length ~ binomial, data = delomys,
+        main = "Body Length Conditioned by Species")
+boxplot(body_length ~ sex, data = delomys,
+        main = "Body Length Conditioned by Sex")
+```
+
+```{r boxplot_BM_by_species_sex, echo = FALSE, fig.align = 'center', fig.width = 11, fig.height = 6}
+boxplot(body_mass ~ sex * binomial, data = delomys,
+        main = "Body Mass Conditioned by Species and Sex")
+```
+
+Visual inspection of the boxplots suggests **little dependence of body mass on species and/or sex.** However, when conditioned on both species *and* sex, the majority of the outlier values for the single condition boxplots were absorbed into the quantiles, suggesting that *multiple conditions better encompass the range of values in this dataset*. Additionally, there does not appear to be a signifigant difference between the averages or quantiles in the single condition plots, whereas there is slightly more variation between conditions in the combined boxplots. Despite this, the species and sex conditioned plots still have very similar averages and ranges of values, further suggesting these conditions do not explain the variation of body mass in this dataset. However, visual inspections can be misleading and we need to test these relationships to determine if there is statistical signifigance.
+
+
+## `MODEL BUILDING`
+
+Despite the fact that these data are not normally distributed, the residuals from a fitted model could be. Below are 5 linear regression models, the first of which predicts `body_length` as a function of `body_mass`. The other four predict `body_mass` as a function of `binomial` (species) and `sex` in various combinations.
+
+
+Model 1: SIMPLE LINEAR REGRESSION
+
+```{r fit1, results = 'hide'}
+fit1 <- lm(body_length ~ body_mass, data = delomys)
+summary(fit1)
+```
+```{r fit1.2, echo = FALSE}
+knitr::kable(coef(summary(fit1)), digits = 3)
+```
+
+
+Model 2: 1-WAY ANOVA: SEX
+
+```{r fit2, results = 'hide'}
+fit2 <- lm(body_mass ~ sex, data = delomys)
+anova(fit2)
+```
+```{r fit2.2, echo = FALSE}
+knitr::kable(anova(fit2), digits = 3)
+```
+
+Model 3: 1-WAY ANOVA: SPECIES
+
+```{r fit3, results = 'hide'}
+fit3 <- lm(body_mass ~ binomial, data = delomys)
+anova(fit3)
+```
+```{r fit3.2, echo = FALSE}
+knitr::kable(anova(fit3), digits = 3)
+```
+
+Model 4: 2-WAY ADDITIVE ANOVA
+
+```{r fit4, results = 'hide'}
+fit4 <- lm(body_mass ~ sex + binomial, data = delomys)
+anova(fit4)
+```
+```{r fit4.2, echo = FALSE}
+knitr::kable(anova(fit4), digits = 3)
+```
+
+Model 5: 2-WAY FACTORIAL ANOVA
+
+```{r fit5, results = 'hide'}
+fit5 <- lm(body_mass ~ sex * binomial, data = delomys)
+anova(fit5)
+```
+```{r fit5.2, echo = FALSE}
+knitr::kable(anova(fit5), digits = 3)
+```
+
+## `MODEL DIAGNOSTICS`
+
+We must check to make sure the residuals fit the assumption of normality. We will do a graphical exploration first with histograms of the residuals, followed by a numerical analysis using the `shapiro.test()`.
+
+```{r fit11}
+res1 <- residuals(fit1)
+hist(res1, main = "Fit 1 Residuals",
+     xlab = "Residuals")
+shapiro.test(res1)
+```
+
+
+```{r fit22}
+res2 <- residuals(fit2)
+hist(res2, main = "Fit 2 Residuals",
+     xlab = "Residuals")
+shapiro.test(res2)
+```
+
+
+```{r fit33}
+res3 <- residuals(fit3)
+hist(res3, main = "Fit 3 Residuals",
+     xlab = "Residuals")
+shapiro.test(res3)
+```
+
+
+```{r fit44}
+res4 <- residuals(fit4)
+hist(res4, main = "Fit 4 Residuals",
+     xlab = "Residuals")
+shapiro.test(res4)
+```
+
+
+```{r fit55}
+res5 <- residuals(fit5)
+hist(res5, main = "Fit 5 Residuals",
+     xlab = "Residuals")
+shapiro.test(res5)
+```
+
+Despite the fact that the fit 2-5 models appear to be normally distibuted, the `shapiro.test()` confirmes that **none of the model residuals are normally distributed**. The second model violates the `shaprio.test()` assumption of normality the least, while the first model violates this assumption most severely. 
+
+
+## `MODEL INTERPRETATION`
+
+We can look at the model coefficient tables to begin interpreting our results.
+
+`fit1` can tell us about the relationship between body mass and length:
+
+```{r MCT1, echo = FALSE}
+knitr::kable(coef(summary(fit1)), digits = 3)
+```
+
+The intercept represents the base case, which is body length. The relationship between length and mass has a magnitude of `0.875`.
+
+If an individual weighed 0g, they would represent the base case length of `76.125`.
+
+- While this makes no sense ecologically, this number has value in statistical analyses.
+
+We would expect a 100g individual to measure `100 * 0.875 + 76.125`, or `163.625`. 
+
+____________________________________________
+
+
+Next we will look at the Model Coefficient tables for the other 4 models. 
+
+Fit 2
+```{r MCT2, echo = FALSE}
+knitr::kable(coef(summary(fit2)), digits = 3)
+```
+
+This table tells us **the base case for** `sex` **is** `female` with a value of `42.711`. Since the value for `male` is positive (2.784), **males are the heavier sex**.
+
+Fit 3
+```{r MCT3, echo = FALSE}
+knitr::kable(coef(summary(fit3)), digits = 3)
+```
+
+This table tells us **the base case for** `binomial` **(species) is** `Delomys dorsalis` with a value of `46.752`. Since the value for `Delomys sublineatus` is negative (-7.683), **`Delomys dorsalis` is the heavier species**.
+
+Fit 4
+```{r MCT4, echo = FALSE}
+knitr::kable(coef(summary(fit4)), digits = 3)
+```
+
+Fit 5
+```{r MCT5, echo = FALSE}
+knitr::kable(coef(summary(fit5)), digits = 3)
+```
+
+____________________________________________
+
+We can look at the ANOVA tables for the 4 body mass models to answer some more questions. The p-values for each variable will tell us if they signifigantly predict body mass. A p-value below 0.05 allows us to reject the null hypothesis of that variable not signifigantly predicting the response variable (body mass).
+
+
+Fit 2
+```{r AT2, echo = FALSE}
+knitr::kable(anova(fit2), digits = 3)
+```
+
+A p-value of 0 in the row for `sex` indicates this varaible signifigantly predicts body mass. 
+
+- Note: all values are rounded to 3 decimal points, so p-values below 0.001 display as 0.
+
+
+Fit 3
+```{r AT3, echo = FALSE}
+knitr::kable(anova(fit3), digits = 3)
+```
+
+A p-value of 0 in the row for `binomial` (species) indicates this varaible signifigantly predicts body mass. 
+
+
+Fit 4
+```{r AT4, echo = FALSE}
+knitr::kable(anova(fit4), digits = 3)
+```
+
+The additive ANOVA model suggests that `sex` and `binomial` (species) signifigantly predict body mass when considered together since both p-values are below 0.05.
+
+
+Fit 5
+```{r AT5, echo = FALSE}
+knitr::kable(anova(fit5), digits = 3)
+```
+
+The factorial ANOVA model suggests that there is **not** a signifigant interaction *between* `sex` and `binomial` (species) since the `sex:binomial` row has a p-vlaue well above 0.05. However, **all four models suggest similar signifigance of the main effects** (sex and species) on their own. 
+
+
+## `MODEL COMPARISON`
+
+We can use the `AIC()` function to chose the best model for body mass. The model with the lowest AIC score is the best fit.
+
+```{r AIC}
+AIC(fit2)
+AIC(fit3)
+AIC(fit4)
+AIC(fit5)
+```
+
+The two lowest AIC scores belong to `fit4` and `fit5` with vlaues of `12896.73` and `12898.72` respectively. The difference between these AIC scores is only `1.99`, which is a minute difference given the magnitude of both scores. In this case, chosing the best model comes down to which model is easier to interpret and understand since they perform essentially the same. `fit4` **is easier to interpret and would be the better model choice** in this case. This decision is supported by the fact that the added `sex:binomial` interaction in the factorial ANOVA (fit5) does not appear to be a signifigant interaction, so chosing this more complex model does not come with useful additional information.
